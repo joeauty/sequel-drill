@@ -1,9 +1,11 @@
-require 'vertica'
+require "json"
+require "net/http"
 
 module Sequel
   extension :core_extensions
-  module Vertica
+  module Drill
 
+=begin
     class CreateTableGenerator < Sequel::Schema::CreateTableGenerator
       def primary_key(name, *args)
         super
@@ -16,17 +18,28 @@ module Sequel
         @primary_key
       end
     end
+=end
 
     class Database < Sequel::Database
 
-      ::Vertica::Connection.send(:alias_method, :execute, :query)
+      #::Drill::Connection.send(:alias_method, :execute, :query)
 
-      PK_NAME = 'C_PRIMARY'
-      AUTO_INCREMENT = 'AUTO_INCREMENT'
-      set_adapter_scheme :vertica
+      #PK_NAME = 'C_PRIMARY'
+      #AUTO_INCREMENT = 'AUTO_INCREMENT'
+      set_adapter_scheme :drill
+      
+      
+      
+      #uri = URI("https://api.namara.io#{ds["data_set_export_link"]}?api_key=#{$apiKey}&geometry_format=wkt")
+      #export_obj = JSON.parse(open(uri).read)
 
       def connect(server)
         opts = server_opts(server)
+        port = opts[:port] ||= 8047
+        
+        uri = URI.parse("#{opts[:host]}:#{port}/query.json")
+        http = Net::HTTP.new(uri.host, uri.port)
+=begin        
         ::Vertica::Connection.new(
           :host => opts[:host],
           :user => opts[:user],
@@ -36,6 +49,7 @@ module Sequel
           :read_timeout => opts[:read_timeout].nil? ? nil : opts[:read_timeout].to_i,
           :ssl => opts[:ssl]
         )
+=end
       end
 
       def execute(sql, opts = {}, &block)

@@ -1,12 +1,13 @@
 require 'spec_helper'
+require 'drill'
 
-unless defined?(VERTICA_DB)
-  VERTICA_URL = 'vertica://vertica:vertica@localhost:5432/reality_spec' unless defined? VERTICA_URL
-  VERTICA_DB = Sequel.connect(ENV['SEQUEL_VERTICA_SPEC_DB']||VERTICA_URL)
+unless defined?(DRILL)
+  DRILL_URL = 'http://drill:8047' unless defined? DRILL_URL
+  DRILL = Drill.new(url: "#{DRILL_URL}")
 end
-INTEGRATION_DB = VERTICA_DB unless defined?(INTEGRATION_DB)
+INTEGRATION_DB = DRILL unless defined?(INTEGRATION_DB)
 
-def VERTICA_DB.sqls
+def DRILL.sqls
   (@sqls ||= [])
 end
 

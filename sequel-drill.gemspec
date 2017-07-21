@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.requirements  = "Apache Drill (tested on v1.10.x)"
   gem.required_ruby_version = '>= 1.9.3'
 
-  gem.add_runtime_dependency "drill-sergeant", "0.1.1"
+  gem.add_runtime_dependency "sequel", "~> 4.14"
 
   gem.add_development_dependency "rake", ">= 10"
   gem.add_development_dependency "rspec" , "~> 3.1"

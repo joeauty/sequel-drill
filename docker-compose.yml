@@ -1,0 +1,21 @@
+version: "2"
+
+services:
+  gem:
+    build: .
+    #command: bundle exec rspec
+    command: sleep infinity
+    volumes:
+      - .:/app
+      - bundle:/bundle
+    depends_on:
+      - drill
+  drill:
+    image: gcr.io/tdw-cr-dev/drill-hdfs:1.10.0
+    tty: true
+    ports:
+      - 8047:8047
+      - 50070:50070
+volumes:
+  bundle:
+    external: true
