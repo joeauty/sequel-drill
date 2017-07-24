@@ -80,13 +80,16 @@ module Sequel
         query_string.sub!(query_array[3], "dfs.#{workspace}.`#{query_array[3]}`").gsub!('"',"")
       end
 
+=begin
       def execute_insert(sql, opts = {}, &block)
         result = execute(sql, opts, &block)
         result.first[:OUTPUT]
       end
+=end
 
       alias_method :execute_dui, :execute
 
+=begin
       # +copy_into+ uses Vertica's +COPY FROM STDIN+ SQL statement to do very fast inserts
       # into a table using any formatting options supported by Vertica.
       # This method is only supported if vertica 1.0.0+ is the underlying ruby driver.
@@ -140,6 +143,7 @@ module Sequel
           end
         end
       end
+=end
 
       def supports_create_table_if_not_exists?
         false
@@ -161,6 +165,7 @@ module Sequel
         nil
       end
 
+=begin
       def locks
         dataset.from(:v_monitor__locks)
       end
@@ -168,11 +173,13 @@ module Sequel
       def auto_increment_sql
         AUTO_INCREMENT
       end
+=end
 
       def create_table_generator_class
         # we aren't using Sequel to import tables, yet... Leave this method available for debugging
       end
 
+=begin
       def tables(options = {})
         schema = options[:schema]
         filter = {}
@@ -220,22 +227,12 @@ module Sequel
         sql
       end
     end
+=end
 
     class Dataset < Sequel::Dataset
       Database::DatasetClass = self
-      EXPLAIN = 'EXPLAIN '.freeze
-      EXPLAIN_LOCAL = 'EXPLAIN LOCAL '.freeze
-      QUERY_PLAN = 'QUERY PLAN'.freeze
-      TIMESERIES = ' TIMESERIES '.freeze
-      OVER = ' OVER '.freeze
-      AS = ' AS '.freeze
-      REGEXP_LIKE = 'REGEXP_LIKE'.freeze
-      SPACE = Dataset::SPACE
-      PAREN_OPEN = Dataset::PAREN_OPEN
-      PAREN_CLOSE = Dataset::PAREN_CLOSE
-      ESCAPE = Dataset::ESCAPE
-      BACKSLASH = Dataset::BACKSLASH
-
+      
+=begin
       Dataset.def_sql_method(self, :select, %w(with select distinct columns from join timeseries where group having compounds order limit lock))
 
       def timeseries(opts={})
@@ -256,6 +253,7 @@ module Sequel
           window_sql_append(sql, ts_opts[:over].opts)
         end
       end
+=end
 
       def columns
         return @columns if @columns
@@ -276,13 +274,14 @@ module Sequel
       end
 
       def supports_regexp?
-        true
+        false
       end
 
       def supports_window_functions?
-        true
+        false
       end
 
+=begin
       def regexp_like(sql, source, pattern, options = nil)
         sql << REGEXP_LIKE
         sql << PAREN_OPEN
@@ -315,6 +314,8 @@ module Sequel
         else
           super
         end
+      end
+=end
       end
     end
   end
