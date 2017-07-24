@@ -40,23 +40,13 @@ module Sequel
 
       def connect(server)
         opts = server_opts(server)
+        # save object for future re-use (build query using provided Drill workspace)
         @connect_opts = opts
         
-        uri = URI.parse("http://#{opts[:host]}:#{opts[:port]}/query.json")
+        @uri = URI.parse("http://#{opts[:host]}:#{opts[:port]}/query.json")
         #binding.pry
-        Net::HTTP.new(uri.host, uri.port)
+        Net::HTTP.new(@uri.host, @uri.port)
         #binding.pry
-=begin        
-        ::Vertica::Connection.new(
-          :host => opts[:host],
-          :user => opts[:user],
-          :password => opts[:password],
-          :port => opts[:port],
-          :database => opts[:database],
-          :read_timeout => opts[:read_timeout].nil? ? nil : opts[:read_timeout].to_i,
-          :ssl => opts[:ssl]
-        )
-=end
       end
 
       def execute(sql, opts = {}, &block)
@@ -70,24 +60,24 @@ module Sequel
         synchronize(opts[:server]) do |conn|
           # convert Sequel queries to drill queries
           sql = sql_to_drill(sql, @connect_opts[:database])
-                  binding.pry
+          #binding.pry
           res = log_yield(sql) {
-            conn.post(@connect_opts[:uri], data.to_json, HEADERS)
-            #conn.query(sql) 
+            conn.post(@uri.request_uri, data.to_json, HEADERS)
           }
-                  binding.pry
-          res.each(&block)
+          
+          #binding.pry
+          JSON.parse(res.body)["rows"].each(&block)
         end
         res
-      rescue ::Drill::Error => e
+      rescue Exception => e
         raise_error(e)
       end
 
       def sql_to_drill(query_string, workspace)
         # converts Sequel/standard SQL queries into Drill queries
         query_array = query_string.split(' ')
-        drill_file = query_array[3].gsub!('"',"")
-        query_string.sub!(query_array[3], "dfs.#{workspace}.`#{drill_file}`")
+        #drill_file = query_array[3].gsub!('"',"")
+        query_string.sub!(query_array[3], "dfs.#{workspace}.`#{query_array[3]}`").gsub!('"',"")
       end
 
       def execute_insert(sql, opts = {}, &block)
