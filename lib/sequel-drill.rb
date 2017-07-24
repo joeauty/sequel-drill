@@ -1,4 +1,4 @@
-require 'sequel-vertica/version'
-require 'sequel/adapters/vertica'
+require 'sequel-drill/version'
+require 'sequel/adapters/drill'
 
-Sequel::Database::ADAPTERS << 'vertica'
+Sequel::Database::ADAPTERS << 'drill'

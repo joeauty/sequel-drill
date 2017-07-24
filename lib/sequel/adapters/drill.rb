@@ -1,8 +1,10 @@
+require "sequel"
 require "json"
 require "net/http"
+require "pry"
 
 module Sequel
-  extension :core_extensions
+  #extension :core_extensions
   module Drill
 
 =begin
@@ -28,17 +30,22 @@ module Sequel
       #AUTO_INCREMENT = 'AUTO_INCREMENT'
       set_adapter_scheme :drill
       
-      
+      HEADERS = {
+        "Content-Type" => "application/json",
+        "Accept" => "application/json"
+      }
       
       #uri = URI("https://api.namara.io#{ds["data_set_export_link"]}?api_key=#{$apiKey}&geometry_format=wkt")
       #export_obj = JSON.parse(open(uri).read)
 
       def connect(server)
         opts = server_opts(server)
-        port = opts[:port] ||= 8047
+        @connect_opts = opts
         
-        uri = URI.parse("#{opts[:host]}:#{port}/query.json")
-        http = Net::HTTP.new(uri.host, uri.port)
+        uri = URI.parse("http://#{opts[:host]}:#{opts[:port]}/query.json")
+        #binding.pry
+        Net::HTTP.new(uri.host, uri.port)
+        #binding.pry
 =begin        
         ::Vertica::Connection.new(
           :host => opts[:host],
@@ -54,13 +61,33 @@ module Sequel
 
       def execute(sql, opts = {}, &block)
         res = nil
+        
+        data = {
+          queryType: "sql",
+          query: sql
+        }
+        
         synchronize(opts[:server]) do |conn|
-          res = log_yield(sql) { conn.query(sql) }
+          # convert Sequel queries to drill queries
+          sql = sql_to_drill(sql, @connect_opts[:database])
+                  binding.pry
+          res = log_yield(sql) {
+            conn.post(@connect_opts[:uri], data.to_json, HEADERS)
+            #conn.query(sql) 
+          }
+                  binding.pry
           res.each(&block)
         end
         res
-      rescue ::Vertica::Error => e
+      rescue ::Drill::Error => e
         raise_error(e)
+      end
+
+      def sql_to_drill(query_string, workspace)
+        # converts Sequel/standard SQL queries into Drill queries
+        query_array = query_string.split(' ')
+        drill_file = query_array[3].gsub!('"',"")
+        query_string.sub!(query_array[3], "dfs.#{workspace}.`#{drill_file}`")
       end
 
       def execute_insert(sql, opts = {}, &block)
@@ -125,7 +152,7 @@ module Sequel
       end
 
       def supports_create_table_if_not_exists?
-        true
+        false
       end
 
       def supports_drop_table_if_exists?
@@ -133,7 +160,7 @@ module Sequel
       end
 
       def supports_transaction_isolation_levels?
-        true
+        false
       end
 
       def identifier_input_method_default
@@ -153,7 +180,7 @@ module Sequel
       end
 
       def create_table_generator_class
-        Vertica::CreateTableGenerator
+        # we aren't using Sequel to import tables, yet... Leave this method available for debugging
       end
 
       def tables(options = {})
