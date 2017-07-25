@@ -34,9 +34,6 @@ module Sequel
         "Content-Type" => "application/json",
         "Accept" => "application/json"
       }
-      
-      #uri = URI("https://api.namara.io#{ds["data_set_export_link"]}?api_key=#{$apiKey}&geometry_format=wkt")
-      #export_obj = JSON.parse(open(uri).read)
 
       def connect(server)
         opts = server_opts(server)
@@ -73,13 +70,12 @@ module Sequel
           if res["errorMessage"].nil?
             # discard column listing to follow Sequel convention
             
-            # TODO: convert JSON output to Ruby symbols
             res = res["rows"]
           end
           #binding.pry
           res.each(&block)
         end
-        binding.pry
+        #binding.pry
         res
       rescue Exception => e
         binding.pry
@@ -94,13 +90,20 @@ module Sequel
           # namespace already attached, do nothing
           query_string
         else
+          # TODO: check for safety/alternatives to stripping quotation marks as done below
+          
           query_array = query_string.split(' ')
+          idx = 0
           if query_string.start_with?("SELECT")
-            # TODO: check for safety/alternatives to stripping quotation marks this way
-            query_string.sub!(query_array[3], "dfs.#{workspace}.`#{query_array[3]}`").gsub!('"',"")
-          else
-            # unknown query
-            query_string
+            idx = 3
+          elsif query_string.start_with?("DROP TABLE IF EXISTS")
+            idx = 4
+          elsif query_string.start_with?("DROP TABLE")
+            idx = 2
+          end
+          
+          if idx > 0
+            query_string.sub!(query_array[idx], "dfs.#{workspace}.`#{query_array[idx]}`").gsub!('"',"")
           end
         end
       end
@@ -281,7 +284,6 @@ module Sequel
 =end
 
       def columns
-        binding.pry
         return @columns if @columns
         ds = unfiltered.unordered.clone(:distinct => nil, :limit => 0, :offset => nil)
         res = @db.execute(ds.select_sql)
