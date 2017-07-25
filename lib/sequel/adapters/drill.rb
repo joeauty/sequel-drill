@@ -56,9 +56,7 @@ module Sequel
         
         synchronize(opts[:server]) do |conn|
           # convert Sequel queries to drill queries
-          #binding.pry
           sql = sql_to_drill(sql, @connect_opts[:database])
-          #binding.pry
           
           # TODO: change to log_connection_yield
           res = log_yield(sql) {
@@ -92,19 +90,14 @@ module Sequel
         else
           # TODO: check for safety/alternatives to stripping quotation marks as done below
           
-          query_array = query_string.split(' ')
-          idx = 0
-          if query_string.start_with?("SELECT")
-            idx = 3
-          elsif query_string.start_with?("DROP TABLE IF EXISTS")
-            idx = 4
-          elsif query_string.start_with?("DROP TABLE")
-            idx = 2
+          #binding.pry
+          query_string = query_string.gsub!('"',"")
+          if query_string.start_with?("SELECT ")
+            query_string.sub(/^SELECT (.*)? FROM (.*)? /, "SELECT \\1 FROM dfs.#{workspace}.`\\2` ")
+          elsif query_string.start_with?("DROP TABLE ")
+            query_string.sub(/^DROP TABLE (IF EXISTS )?(.*)?/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
           end
           
-          if idx > 0
-            query_string.sub!(query_array[idx], "dfs.#{workspace}.`#{query_array[idx]}`").gsub!('"',"")
-          end
         end
       end
 
@@ -293,6 +286,7 @@ module Sequel
 
       def fetch_rows(sql)
         execute(sql) do |row|
+          binding.pry
           yield row.to_h.inject({}) { |a, (k,v)| a[k.to_sym] = v; a }
         end
       end
