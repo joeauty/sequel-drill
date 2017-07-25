@@ -59,25 +59,50 @@ module Sequel
         
         synchronize(opts[:server]) do |conn|
           # convert Sequel queries to drill queries
+          #binding.pry
           sql = sql_to_drill(sql, @connect_opts[:database])
           #binding.pry
+          
+          # TODO: change to log_connection_yield
           res = log_yield(sql) {
             conn.post(@uri.request_uri, data.to_json, HEADERS)
           }
           
           #binding.pry
-          JSON.parse(res.body)["rows"].each(&block)
+          res = JSON.parse(res.body)
+          if res["errorMessage"].nil?
+            # discard column listing to follow Sequel convention
+            
+            # TODO: convert JSON output to Ruby symbols
+            res = res["rows"]
+          end
+          #binding.pry
+          res.each(&block)
         end
+        binding.pry
         res
       rescue Exception => e
+        binding.pry
         raise_error(e)
       end
 
       def sql_to_drill(query_string, workspace)
         # converts Sequel/standard SQL queries into Drill queries
-        query_array = query_string.split(' ')
-        #drill_file = query_array[3].gsub!('"',"")
-        query_string.sub!(query_array[3], "dfs.#{workspace}.`#{query_array[3]}`").gsub!('"',"")
+        
+        # TODO: come up with more precise regex pattern
+        if query_string.include?("dfs.#{workspace}.")
+          # namespace already attached, do nothing
+          query_string
+        else
+          query_array = query_string.split(' ')
+          if query_string.start_with?("SELECT")
+            # TODO: check for safety/alternatives to stripping quotation marks this way
+            query_string.sub!(query_array[3], "dfs.#{workspace}.`#{query_array[3]}`").gsub!('"',"")
+          else
+            # unknown query
+            query_string
+          end
+        end
       end
 
 =begin
@@ -256,6 +281,7 @@ module Sequel
 =end
 
       def columns
+        binding.pry
         return @columns if @columns
         ds = unfiltered.unordered.clone(:distinct => nil, :limit => 0, :offset => nil)
         res = @db.execute(ds.select_sql)
@@ -269,9 +295,11 @@ module Sequel
         end
       end
 
+=begin
       def explain(opts={})
         execute((opts[:local] ? EXPLAIN_LOCAL : EXPLAIN) + select_sql).map { |k, v| k == QUERY_PLAN }.join("\$")
       end
+=end
 
       def supports_regexp?
         false
