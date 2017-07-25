@@ -55,9 +55,6 @@ module Sequel
         }
         
         synchronize(opts[:server]) do |conn|
-          # convert Sequel queries to drill queries
-          sql = sql_to_drill(sql, @connect_opts[:database])
-          
           # TODO: change to log_connection_yield
           res = log_yield(sql) {
             conn.post(@uri.request_uri, data.to_json, HEADERS)
@@ -78,27 +75,6 @@ module Sequel
       rescue Exception => e
         binding.pry
         raise_error(e)
-      end
-
-      def sql_to_drill(query_string, workspace)
-        # converts Sequel/standard SQL queries into Drill queries
-        
-        # TODO: come up with more precise regex pattern
-        if query_string.include?("dfs.#{workspace}.")
-          # namespace already attached, do nothing
-          query_string
-        else
-          # TODO: check for safety/alternatives to stripping quotation marks as done below
-          
-          #binding.pry
-          query_string = query_string.gsub!('"',"")
-          if query_string.start_with?("SELECT ")
-            query_string.sub(/^SELECT (.*)? FROM (.*)? /, "SELECT \\1 FROM dfs.#{workspace}.`\\2` ")
-          elsif query_string.start_with?("DROP TABLE ")
-            query_string.sub(/^DROP TABLE (IF EXISTS )?(.*)?/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
-          end
-          
-        end
       end
 
 =begin
@@ -285,8 +261,28 @@ module Sequel
       end
 
       def fetch_rows(sql)
+        #binding.pry
+        
+        # convert Sequel table names to Drill workspace + file
+        workspace = ENV['DRILL_WORKSPACE'] ||= "tmp"
+        # TODO: more precise regex pattern here
+        unless sql.include?("dfs.#{workspace}.")
+          # namespace already attached, do nothing
+          
+          if sql.include?("")
+            # TODO: check for safety/alternatives to stripping quotation marks as done below
+            sql = sql.gsub!('"',"")
+          end
+          if sql.start_with?("SELECT ")
+            sql = sql.sub(/^SELECT (.+)? FROM ([[:graph:]]+)?/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
+          elsif query_string.start_with?("DROP TABLE ")
+            sql = sql.sub(/^DROP TABLE (IF EXISTS )?([[:graph:]]+)?$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
+          end
+        end
+        
+        #binding.pry
         execute(sql) do |row|
-          binding.pry
+          # TODO: possible hack to cast numbers recorded as JSON strings to numbers?
           yield row.to_h.inject({}) { |a, (k,v)| a[k.to_sym] = v; a }
         end
       end
