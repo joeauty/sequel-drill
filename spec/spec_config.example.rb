@@ -1,1 +1,2 @@
-VERTICA_URL = 'vertica://dbadmin:dbadmin@127.0.0.1:5433/ci'
+# Docker-compose generated hostname
+DRILL_URL = 'drill://drill:8047'

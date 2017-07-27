@@ -1,7 +1,6 @@
 require "sequel"
 require "json"
 require "net/http"
-require "pry"
 
 module Sequel
   module Drill
