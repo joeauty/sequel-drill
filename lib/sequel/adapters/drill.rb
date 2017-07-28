@@ -3,6 +3,7 @@ require "json"
 require "net/http"
 
 module Sequel
+  extension :core_extensions
   module Drill
 
     class Database < Sequel::Database

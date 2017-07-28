@@ -38,7 +38,6 @@ end
 describe "A drill dataset" do
   before do
     @d = DRILL_DB[:test]
-    #@d.delete if @d.count > 0 # Vertica will throw an error if the table has just been created and does not have a super projection yet.
   end
 
   specify "quotes columns and tables using double quotes if quoting identifiers" do
@@ -50,7 +49,6 @@ describe "A drill dataset" do
       'SELECT COUNT(*) FROM "test"'
     )
     
-=begin
     expect(@d.select(:max.sql_function(:value)).sql).to eq( \
       'SELECT max("value") FROM "test"'
     )
@@ -66,7 +64,6 @@ describe "A drill dataset" do
     expect(@d.order(:name.desc).sql).to eq( \
       'SELECT * FROM "test" ORDER BY "name" DESC'
     )
-=end
     
     expect(@d.select(Sequel.lit('test.name AS item_name')).sql).to eq( \
       'SELECT test.name AS item_name FROM "test"'
@@ -86,7 +83,6 @@ describe "A drill dataset" do
       'SELECT * FROM "test" ORDER BY "name" DESC'
     )
 
-=begin
     expect(@d.reverse_order(:name.desc).sql).to eq( \
       'SELECT * FROM "test" ORDER BY "name" ASC'
     )
@@ -98,7 +94,6 @@ describe "A drill dataset" do
     expect(@d.reverse_order(:name.desc, :test).sql).to eq( \
       'SELECT * FROM "test" ORDER BY "name" ASC, "test" DESC'
     )
-=end
   end
 end
 
