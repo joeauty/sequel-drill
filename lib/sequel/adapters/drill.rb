@@ -87,22 +87,13 @@ module Sequel
         # hacks for Sequel functions without adapter methods intended to be extended/overridden
         
         # aggregate functions should include backticks
-        sql = sql.sub(/^SELECT count\((.+)?\) AS ([[:graph:]]+)?/, "SELECT count(\\1) AS `\\2`")
-        sql = sql.sub(/^SELECT max\((.+)?\) AS ([[:graph:]]+)?/, "SELECT max(\\1) AS `\\2`")
-        sql = sql.sub(/^SELECT min\((.+)?\) AS ([[:graph:]]+)?/, "SELECT min(\\1) AS `\\2`")
-        sql = sql.sub(/^SELECT sum\((.+)?\) AS ([[:graph:]]+)?/, "SELECT sum(\\1) AS `\\2`")
-        sql = sql.sub(/^SELECT avg\((.+)?\) AS ([[:graph:]]+)?/, "SELECT avg(\\1) AS `\\2`")
+        # TODO: check for safety/alternatives to stripping quotation marks as done below
+        sql = sql.gsub!('"',"")
+        sql.gsub!(/([[:alnum:]]+\([[:alnum:]]+\)) AS ([[:alnum:]]+)/, '\1 AS `\2`')
         
         # convert Sequel table names to Drill workspace + file
         workspace = ENV['DRILL_WORKSPACE'] ||= "tmp"
-        # TODO: more precise regex pattern here
-        unless sql.include?("dfs.#{workspace}.")
-          # namespace already attached, do nothing
-          
-          if sql.include?("")
-            # TODO: check for safety/alternatives to stripping quotation marks as done below
-            sql = sql.gsub!('"',"")
-          end
+        unless sql.include?("dfs.#{workspace}.`[[:alnum:]]`") # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
             sql = sql.sub(/^SELECT (.+)? FROM ([[:graph:]]+)?/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
           elsif query_string.start_with?("DROP TABLE ")
