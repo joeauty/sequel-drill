@@ -80,6 +80,8 @@ module Sequel
 
     class Dataset < Sequel::Dataset
       Database::DatasetClass = self
+      LESS_THAN = '<'.freeze
+      GREATER_THAN = '>'.freeze
       
       def fetch_rows(sql)
         # convert Sequel table names to Drill workspace + file
@@ -111,6 +113,18 @@ module Sequel
 
       def supports_window_functions?
         false
+      end
+      
+      def complex_expression_sql_append(sql, op, args)
+        case op
+        when :'!='
+          # Apache Drill doesn't support != as an ne operator, use <> instead
+          literal_append(sql, args.at(0))
+          sql << " " << LESS_THAN << GREATER_THAN << " "
+          literal_append(sql, args.at(1))
+        else
+          super
+        end
       end
 
     end
