@@ -3,7 +3,7 @@ version: "2"
 services:
   gem:
     build: .
-    command: bundle exec rspec
+    command: sleep infinity
     volumes:
       - .:/app
       - bundle:/bundle
