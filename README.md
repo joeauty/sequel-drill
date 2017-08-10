@@ -15,6 +15,12 @@ For now, the following features are not supported by this adapter:
 
 A Docker image called "drill-hdfs" (link to Dockerhub) has been created for testing purposes, consisting of both Apache Drill and a bare-bones Hadoop service including the HDFS file system. If you wish to use the HDFS file system with Drill for testing purposes, you will need to update Drill's DFS storage plugin config [here](http://localhost:8047/storage/dfs). The "connection" field should be set to `hdfs://localhost:8020/`
 
+If you wish to use the `tmp` workspace you'll also need to create this directory. You can do so as follows:
+
+```
+docker exec -it [drill image id] hdfs dfs -mkdir /tmp
+```
+
 ### Known issues/caveats/things
 
 * Numbers in Drill are enclosed in quotation marks within its JSON output. If this is an issue you might need to cast within your application, this adapter will not attempt to manipulate output, with one exception (below)
