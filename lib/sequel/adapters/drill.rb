@@ -84,6 +84,15 @@ module Sequel
       GREATER_THAN = '>'.freeze
       
       def fetch_rows(sql)
+        # hacks for Sequel functions without adapter methods intended to be extended/overridden
+        
+        # aggregate functions should include backticks
+        sql = sql.sub(/^SELECT count\((.+)?\) AS ([[:graph:]]+)?/, "SELECT count(\\1) AS `\\2`")
+        sql = sql.sub(/^SELECT max\((.+)?\) AS ([[:graph:]]+)?/, "SELECT max(\\1) AS `\\2`")
+        sql = sql.sub(/^SELECT min\((.+)?\) AS ([[:graph:]]+)?/, "SELECT min(\\1) AS `\\2`")
+        sql = sql.sub(/^SELECT sum\((.+)?\) AS ([[:graph:]]+)?/, "SELECT sum(\\1) AS `\\2`")
+        sql = sql.sub(/^SELECT avg\((.+)?\) AS ([[:graph:]]+)?/, "SELECT avg(\\1) AS `\\2`")
+        
         # convert Sequel table names to Drill workspace + file
         workspace = ENV['DRILL_WORKSPACE'] ||= "tmp"
         # TODO: more precise regex pattern here
