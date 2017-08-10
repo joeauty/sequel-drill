@@ -45,7 +45,18 @@ describe "A drill dataset" do
     'SELECT * FROM "test" WHERE "c1" <> 10'
     )
   end
-  
+
+  specify "Drill workaround: aggregate methods column display names should be escaped with backticks using Drill workspace" do
+    # generated query should be "SELECT count(name) AS `count` FROM dfs.tmp.`test` LIMIT 1"
+    expect(@d.count(:c1)).to eq("3")
+    
+    # test the other methods just for good measure
+    expect(@d.max(:c2)).to eq("66.0")
+    expect(@d.min(:c2)).to eq("11.0")
+    expect(@d.sum(:c2)).to eq("99.0")
+    expect(@d.avg(:c2)).to eq("33.0")
+  end
+
   specify "quotes columns and tables using double quotes if quoting identifiers" do
     expect(@d.select(:name).sql).to eq( \
       'SELECT "name" FROM "test"'
