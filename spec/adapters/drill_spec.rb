@@ -39,7 +39,13 @@ describe "A drill dataset" do
   before do
     @d = DRILL_DB[:test]
   end
-
+  
+  specify "Drill workaround: override != operators with <>" do
+    expect(@d.where(c1:10).invert.sql).to eq( \
+    'SELECT * FROM "test" WHERE "c1" <> 10'
+    )
+  end
+  
   specify "quotes columns and tables using double quotes if quoting identifiers" do
     expect(@d.select(:name).sql).to eq( \
       'SELECT "name" FROM "test"'
