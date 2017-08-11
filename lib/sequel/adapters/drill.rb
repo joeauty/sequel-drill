@@ -40,8 +40,8 @@ module Sequel
           
           res = JSON.parse(res.body)
           if res["errorMessage"].nil?
-            # discard column listing to follow Sequel convention
             
+            # discard column listing to follow Sequel convention
             res = res["rows"]
           end
           res.each(&block)
@@ -85,19 +85,19 @@ module Sequel
       
       def fetch_rows(sql)
         # hacks for Sequel functions without adapter methods intended to be extended/overridden
-        
+      
+        # replace quotation marks with backticks for proper Drill support
+        sql.gsub!('"', '`')
         # aggregate functions should include backticks
-        # TODO: check for safety/alternatives to stripping quotation marks as done below
-        sql = sql.gsub!('"',"")
-        sql.gsub!(/([[:alnum:]]+\([[:alnum:]]+\)) AS ([[:alnum:]]+)/, '\1 AS `\2`')
+        sql.gsub!(/([[:alpha:]]+\(.*`?[A-Za-z0-9_*\s]+`?\)) AS ([A-Za-z0-9_]+)/, '\1 AS `\2`')
         
         # convert Sequel table names to Drill workspace + file
         workspace = ENV['DRILL_WORKSPACE'] ||= "tmp"
-        unless sql.include?("dfs.#{workspace}.`[[:alnum:]]`") # namespace already attached, do nothing
+        unless sql.match(/.+dfs.#{workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
-            sql = sql.sub(/^SELECT (.+)? FROM ([[:graph:]]+)?/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
+            sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
           elsif query_string.start_with?("DROP TABLE ")
-            sql = sql.sub(/^DROP TABLE (IF EXISTS )?([[:graph:]]+)?$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
+            sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
           end
         end
         
