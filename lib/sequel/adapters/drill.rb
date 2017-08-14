@@ -43,6 +43,11 @@ module Sequel
             # discard column listing to follow Sequel convention
             
             res = res["rows"]
+            
+            # return empty array for empty data sets to follow more common conventions
+            if res.to_json == "[{}]"
+              res = []
+            end
           end
           res.each(&block)
         end
