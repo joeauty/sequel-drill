@@ -106,7 +106,9 @@ module Sequel
           end
         end
         
+        puts sql
         execute(sql) do |row|
+          puts row
           # TODO: possible hack to cast numbers recorded as JSON strings to numbers?
           yield row.to_h.inject({}) { |a, (k,v)| a[k.to_sym] = v; a }
         end
