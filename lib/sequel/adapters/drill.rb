@@ -1,6 +1,7 @@
 require "sequel"
 require "json"
 require "net/http"
+require "pry"
 
 module Sequel
   extension :core_extensions
@@ -101,14 +102,12 @@ module Sequel
         unless sql.match(/.+dfs.#{workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
             sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
-          elsif query_string.start_with?("DROP TABLE ")
+          elsif sql.start_with?("DROP TABLE ")
             sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
           end
         end
         
-        puts sql
         execute(sql) do |row|
-          puts row
           # TODO: possible hack to cast numbers recorded as JSON strings to numbers?
           yield row.to_h.inject({}) { |a, (k,v)| a[k.to_sym] = v; a }
         end
