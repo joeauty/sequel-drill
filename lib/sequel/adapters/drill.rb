@@ -101,7 +101,7 @@ module Sequel
         unless sql.match(/.+dfs.#{workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
             sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
-          elsif query_string.start_with?("DROP TABLE ")
+          elsif sql.start_with?("DROP TABLE ")
             sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
           end
         end
