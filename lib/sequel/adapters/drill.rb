@@ -14,6 +14,8 @@ module Sequel
         "Content-Type" => "application/json",
         "Accept" => "application/json"
       }
+      
+      WORKSPACE = ENV['DRILL_WORKSPACE'] ||= "tmp"
 
       def connect(server)
         opts = server_opts(server)
@@ -31,6 +33,11 @@ module Sequel
           queryType: "sql",
           query: sql
         }
+        
+        if sql.start_with?("DROP TABLE ")
+          sql.gsub!('"', '`')
+          sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{WORKSPACE}.`\\2`")
+        end
         
         synchronize(opts[:server]) do |conn|
           # TODO: change to log_connection_yield
@@ -87,6 +94,7 @@ module Sequel
       Database::DatasetClass = self
       LESS_THAN = '<'.freeze
       GREATER_THAN = '>'.freeze
+      WORKSPACE = ENV['DRILL_WORKSPACE'] ||= "tmp"
       
       def fetch_rows(sql)
         # hacks for Sequel functions without adapter methods intended to be extended/overridden
@@ -97,12 +105,9 @@ module Sequel
         sql.gsub!(/([[:alpha:]]+\(.*`?[A-Za-z0-9_*\s]+`?\)) AS ([A-Za-z0-9_]+)/, '\1 AS `\2`')
         
         # convert Sequel table names to Drill workspace + file
-        workspace = ENV['DRILL_WORKSPACE'] ||= "tmp"
-        unless sql.match(/.+dfs.#{workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
+        unless sql.match(/.+dfs.#{WORKSPACE}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
-            sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{workspace}.`\\2`")
-          elsif sql.start_with?("DROP TABLE ")
-            sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
+            sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{WORKSPACE}.`\\2`")
           end
         end
         
