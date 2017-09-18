@@ -9,7 +9,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["joe@thinkdataworks.com"]
   gem.description   = %q{Sequel adapter for Apache Drill}
   gem.summary       = %q{Sequel adapter for Apache Drill based on sequel-vertica}
-  gem.homepage      = "https://github.com/thinkdata-works/sequel-drill"
+  gem.homepage      = "https://github.com/joeauty/sequel-drill"
   gem.license     = "MIT"
 
   gem.requirements  = "Apache Drill (tested on v1.10.x)"
