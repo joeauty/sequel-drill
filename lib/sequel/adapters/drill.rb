@@ -30,7 +30,7 @@ module Sequel
         res = nil
         
         data = {
-          queryType: "sql",
+          queryType: "SQL",
           query: sql
         }
         
