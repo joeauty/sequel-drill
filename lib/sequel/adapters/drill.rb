@@ -14,8 +14,6 @@ module Sequel
         "Content-Type" => "application/json",
         "Accept" => "application/json"
       }
-      
-      WORKSPACE = ENV['DRILL_WORKSPACE'] ||= "tmp"
 
       def connect(server)
         opts = server_opts(server)
@@ -36,7 +34,7 @@ module Sequel
         
         if sql.start_with?("DROP TABLE ")
           sql.gsub!('"', '`')
-          sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{WORKSPACE}.`\\2`")
+          sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
         end
         
         synchronize(opts[:server]) do |conn|
@@ -61,6 +59,11 @@ module Sequel
         res
       rescue Exception => e
         raise_error(e)
+      end
+
+      def workspace
+        # get Drill workspace from traditional Sequel database connection string
+        URI(uri).path[1..-1] || ENV['DRILL_WORKSPACE']
       end
 
       alias_method :execute_dui, :execute
@@ -94,20 +97,19 @@ module Sequel
       Database::DatasetClass = self
       LESS_THAN = '<'.freeze
       GREATER_THAN = '>'.freeze
-      WORKSPACE = ENV['DRILL_WORKSPACE'] ||= "tmp"
-      
+
       def fetch_rows(sql)
         # hacks for Sequel functions without adapter methods intended to be extended/overridden
-      
         # replace quotation marks with backticks for proper Drill support
         sql.gsub!('"', '`')
         # aggregate functions should include backticks
         sql.gsub!(/([[:alpha:]]+\(.*`?[A-Za-z0-9_*\s]+`?\)) AS ([A-Za-z0-9_]+)/, '\1 AS `\2`')
         
         # convert Sequel table names to Drill workspace + file
-        unless sql.match(/.+dfs.#{WORKSPACE}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
+        unless sql.match(/.+dfs.#{@db.workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
-            sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{WORKSPACE}.`\\2`")
+
+            sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{@db.workspace}.`\\2`")
           end
         end
         
