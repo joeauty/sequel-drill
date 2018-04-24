@@ -63,7 +63,7 @@ module Sequel
 
       def workspace
         # get Drill workspace from traditional Sequel database connection string
-        URI(uri).path[1..-1]
+        URI(uri).path[1..-1] || ENV['DRILL_WORKSPACE']
       end
 
       alias_method :execute_dui, :execute
