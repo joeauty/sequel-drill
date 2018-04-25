@@ -34,7 +34,7 @@ module Sequel
         
         if sql.start_with?("DROP TABLE ")
           sql.gsub!('"', '`')
-          sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
+          sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_\.]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
         end
         
         synchronize(opts[:server]) do |conn|
