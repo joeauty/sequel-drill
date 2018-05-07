@@ -9,7 +9,7 @@ module Sequel
     class Database < Sequel::Database
 
       set_adapter_scheme :drill
-      
+
       HEADERS = {
         "Content-Type" => "application/json",
         "Accept" => "application/json"
@@ -19,36 +19,38 @@ module Sequel
         opts = server_opts(server)
         # save object for future re-use (build query using provided Drill workspace)
         @connect_opts = opts
-        
+
         @uri = URI.parse("http://#{opts[:host]}:#{opts[:port]}/query.json")
-        Net::HTTP.new(@uri.host, @uri.port)
+        connection = Net::HTTP.new(@uri.host, @uri.port)
+        connection.read_timeout = opts[:read_timeout] unless opts[:read_timeout].nil?
+        connection
       end
 
       def execute(sql, opts = {}, &block)
         res = nil
-        
+
         data = {
           queryType: "SQL",
           query: sql
         }
-        
+
         if sql.start_with?("DROP TABLE ")
           sql.gsub!('"', '`')
           sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_\.]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
         end
-        
+
         synchronize(opts[:server]) do |conn|
           # TODO: change to log_connection_yield
           res = log_yield(sql) {
             conn.post(@uri.request_uri, data.to_json, HEADERS)
           }
-          
+
           res = JSON.parse(res.body)
           if res["errorMessage"].nil?
-            
+
             # discard column listing to follow Sequel convention
             res = res["rows"]
-            
+
             # return empty array for empty data sets to follow more common conventions
             if res.to_json == "[{}]"
               res = []
@@ -104,7 +106,7 @@ module Sequel
         sql.gsub!('"', '`')
         # aggregate functions should include backticks
         sql.gsub!(/([[:alpha:]]+\(.*`?[A-Za-z0-9_*\s]+`?\)) AS ([A-Za-z0-9_]+)/, '\1 AS `\2`')
-        
+
         # convert Sequel table names to Drill workspace + file
         unless sql.match(/.+dfs.#{@db.workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
           if sql.start_with?("SELECT ")
@@ -112,7 +114,7 @@ module Sequel
             sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{@db.workspace}.`\\2`")
           end
         end
-        
+
         execute(sql) do |row|
           # TODO: possible hack to cast numbers recorded as JSON strings to numbers?
           yield row.to_h.inject({}) { |a, (k,v)| a[k.to_sym] = v; a }
@@ -126,7 +128,7 @@ module Sequel
       def supports_window_functions?
         false
       end
-      
+
       def complex_expression_sql_append(sql, op, args)
         case op
         when :'!='
