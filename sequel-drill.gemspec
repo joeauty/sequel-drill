@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
   gem.description   = %q{Sequel adapter for Apache Drill}
   gem.summary       = %q{Sequel adapter for Apache Drill based on sequel-vertica}
   gem.homepage      = "https://github.com/joeauty/sequel-drill"
-  gem.license     = "MIT"
+  gem.license       = "MIT"
 
   gem.requirements  = "Apache Drill (tested on v1.10.x)"
   gem.required_ruby_version = '>= 1.9.3'
@@ -21,6 +21,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "rspec" , "~> 3.1"
   gem.add_development_dependency "pry"
   gem.add_development_dependency "webhdfs", "0.8.0"
+  gem.add_development_dependency "http-cookie"
 
   gem.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   gem.files         = `git ls-files`.split("\n")
