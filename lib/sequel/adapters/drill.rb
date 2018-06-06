@@ -1,29 +1,88 @@
 require "sequel"
 require "json"
 require "net/http"
+require "http-cookie"
+require_relative "../helpers/session"
 
 module Sequel
   extension :core_extensions
   module Drill
 
+    class AuthError < StandardError; end
+    class DrillInternalError < StandardError; end
+
     class Database < Sequel::Database
+
+      def dataset_class_default
+        Dataset
+      end
 
       set_adapter_scheme :drill
 
       HEADERS = {
         "Content-Type" => "application/json",
         "Accept" => "application/json"
-      }
+      }.freeze
 
       def connect(server)
         opts = server_opts(server)
+
         # save object for future re-use (build query using provided Drill workspace)
         @connect_opts = opts
 
-        @uri = URI.parse("http://#{opts[:host]}:#{opts[:port]}/query.json")
-        connection = Net::HTTP.new(@uri.host, @uri.port)
+        # authenticates on drill if user field is present and no sessions are present for the provided user.
+        if session_cookie_for_user.nil? and !opts[:user].nil?
+          Database.authenticate!(opts[:user], opts[:password], opts[:host], opts[:port])
+        end
+
+        @query_uri = URI.parse("http://#{opts[:host]}:#{opts[:port]}/query.json")
+
+        connection = Net::HTTP.new(@query_uri.host, @query_uri.port)
         connection.read_timeout = opts[:read_timeout] unless opts[:read_timeout].nil?
         connection
+      end
+
+      # drill authentication must be enabled. https://drill.apache.org/docs/creating-custom-authenticators/
+      #
+      # when a sucessfull login is made, drill returns 303 status code, with set-cookie header.
+      # when login fails drill returns 200 with an html containing "invalid credentials" string
+      def self.authenticate!(user, password, host, port)
+
+        login_uri = URI("http://#{host}:#{port}/j_security_check")
+
+        params = {
+          j_username: user,
+          j_password: password
+        }
+
+        res = Net::HTTP.post_form(login_uri, params)
+
+        case res.code.to_i
+
+        # invalid creds will return a 200 status code with an error html.
+        when 200
+          raise AuthError.new("Invalid Credentials")
+        when 303
+
+          jar = HTTP::CookieJar.new
+          # store received session cookie
+          Session.instance.set("#{user}:#{password}", jar.parse(res.get_fields('Set-Cookie'), login_uri))
+        end
+      end
+
+      def session_cookie_for_user
+        Session.instance.get("#{@connect_opts[:user]}:#{@connect_opts[:password]}")
+      end
+
+      # if user is authenticated
+      # append session cookies to headers
+      def headers
+        cookie = session_cookie_for_user
+        if cookie.nil?
+          HEADERS
+        else
+          { "Cookie" => HTTP::Cookie.cookie_value(cookie) }.merge(HEADERS)
+        end
       end
 
       def execute(sql, opts = {}, &block)
@@ -41,25 +100,42 @@ module Sequel
 
         synchronize(opts[:server]) do |conn|
           # TODO: change to log_connection_yield
+
           res = log_yield(sql) {
-            conn.post(@uri.request_uri, data.to_json, HEADERS)
+            conn.post(@query_uri.request_uri, data.to_json, headers)
           }
 
-          res = JSON.parse(res.body)
-          if res["errorMessage"].nil?
+          # TODO: move to a better rest api error handling based on error codes
+          case res.code.to_i
+          # when drill returns 307, it means authentication is enabled but we don't have a session
+          when 307
+            raise AuthError.new("Drill returned a temporary redirect")
+          when 500
+            raise DrillInternalError.new("#{JSON.parse(res.body)['errorMessage']}")
+          else
+            res = JSON.parse(res.body)
+            if res["errorMessage"].nil?
 
-            # discard column listing to follow Sequel convention
-            res = res["rows"]
+              # discard column listing to follow Sequel convention
+              res = res["rows"]
 
-            # return empty array for empty data sets to follow more common conventions
-            if res.to_json == "[{}]"
-              res = []
+              # return empty array for empty data sets to follow more common conventions
+              if res.to_json == "[{}]"
+                res = []
+              end
             end
+            res.each(&block)
           end
-          res.each(&block)
         end
+
         res
+      # raise drill error with vanilla `raise` instead of raise_error here
+      # since it makes it easier to rescue on user-land applications.
+      rescue AuthError, DrillInternalError => e
+        raise(e)
+
       rescue Exception => e
+        # unexpected errors are thrown by raise_error method
         raise_error(e)
       end
 
@@ -96,7 +172,6 @@ module Sequel
     end
 
     class Dataset < Sequel::Dataset
-      Database::DatasetClass = self
       LESS_THAN = '<'.freeze
       GREATER_THAN = '>'.freeze
 

@@ -23,6 +23,16 @@ describe '#connect' do
       expect(c.read_timeout).to eq 60
     end
   end
+
+  it 'should call authenticate method' do
+
+    expect(Sequel::Drill::Database).to receive(:authenticate!)
+
+    conn = Sequel.connect("#{ENV['DRILL_URL']||DRILL_URL}", user: "user", password: "123")
+    conn.synchronize do |c|
+      expect(c.read_timeout).to eq 60
+    end
+  end
 end
 
 describe "import dataset" do
@@ -131,3 +141,17 @@ describe "A drill dataset" do
   end
 end
 
+describe "authenticate!" do
+
+  before do
+    response = Net::HTTPResponse.new({}, 303, {})
+
+    allow(response).to receive(:get_fields).and_return "JSESSIONID=123123;Path=\\"
+    expect(Net::HTTP).to receive(:post_form).and_return(response)
+  end
+
+  it 'should create session token' do
+    Sequel::Drill::Database.authenticate!("u1", "p1", "drill", 8047)
+    expect(Session.instance.get("u1:p1").first.cookie_value).to eq "JSESSIONID=123123"
+  end
+end
