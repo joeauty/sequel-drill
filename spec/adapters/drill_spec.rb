@@ -3,8 +3,11 @@ require 'spec_helper'
 ENV['DRILL_WORKSPACE']    = 'tmp' # workspace for imported Parquet files
 ENV['HDFS_HOST']          = 'drill' # HDFS hostname (Docker hostname)
 
+ENV['DRILL_DEFAULT_USER'] = 'user1'
+ENV['DRILL_DEFAULT_PASSWORD'] = 'user1_password'
+
 unless defined?(DRILL)
-  DRILL_URL = 'drill://drill:8047' unless defined? DRILL_URL
+  DRILL_URL = "drill://#{ENV['DRILL_DEFAULT_USER']}:#{ENV['DRILL_DEFAULT_PASSWORD']}@drill:8047" unless defined? DRILL_URL
   DRILL_DB = Sequel.connect(ENV['DRILL_URL']||DRILL_URL)
 end
 
@@ -146,7 +149,7 @@ describe "authenticate!" do
   before do
     response = Net::HTTPResponse.new({}, 303, {})
 
-    allow(response).to receive(:get_fields).and_return "JSESSIONID=123123;Path=\\"
+    allow(response).to receive(:get_fields).and_return ["JSESSIONID=123123;Path=\\"]
     expect(Net::HTTP).to receive(:post_form).and_return(response)
   end
 

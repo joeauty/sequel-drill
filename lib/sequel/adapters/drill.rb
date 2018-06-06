@@ -66,7 +66,7 @@ module Sequel
 
           jar = HTTP::CookieJar.new
           # store received session cookie
-          Session.instance.set("#{user}:#{password}", jar.parse(res.get_fields('Set-Cookie'), login_uri))
+          Session.instance.set("#{user}:#{password}", jar.parse(res.get_fields('Set-Cookie').first, login_uri))
         end
       end
 

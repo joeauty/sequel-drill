@@ -16,12 +16,12 @@ Gem::Specification.new do |gem|
   gem.required_ruby_version = '>= 1.9.3'
 
   gem.add_runtime_dependency "sequel", "~> 4.14"
+  gem.add_runtime_dependency "http-cookie"
 
   gem.add_development_dependency "rake", ">= 10"
   gem.add_development_dependency "rspec" , "~> 3.1"
   gem.add_development_dependency "pry"
   gem.add_development_dependency "webhdfs", "0.8.0"
-  gem.add_development_dependency "http-cookie"
 
   gem.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   gem.files         = `git ls-files`.split("\n")
