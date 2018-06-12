@@ -9,7 +9,7 @@ module Sequel
   module Drill
 
     class AuthError < StandardError; end
-    class DrillInternalError < StandardError; end
+    class DrillInternalError < Sequel::DatabaseError; end
 
     class Database < Sequel::Database
 
