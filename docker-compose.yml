@@ -10,7 +10,7 @@ services:
     depends_on:
       - drill
   drill:
-    image: gcr.io/tdw-cr-dev/drill-hdfs:1.10.0
+    image: gcr.io/tdw-cr-dev/drill-hdfs:1.14.0-20180717
     tty: true
     ports:
       - 8047:8047
