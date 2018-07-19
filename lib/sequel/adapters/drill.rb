@@ -182,13 +182,8 @@ module Sequel
         # aggregate functions should include backticks
         sql.gsub!(/([[:alpha:]]+\(.*`?[A-Za-z0-9_*\s]+`?\)) AS ([A-Za-z0-9_]+)/, '\1 AS `\2`')
 
-        # convert Sequel table names to Drill workspace + file
-        unless sql.match(/.+dfs.#{@db.workspace}.`[A-Za-z0-9_]`.+/) # namespace already attached, do nothing
-          if sql.start_with?("SELECT ")
-
-            sql.sub!(/^SELECT (.+) FROM `([A-Za-z0-9_]+)`/, "SELECT \\1 FROM dfs.#{@db.workspace}.`\\2`")
-          end
-        end
+        # append workspace to all table names
+        sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{@db.workspace}.\\1")
 
         execute(sql) do |row|
           # TODO: possible hack to cast numbers recorded as JSON strings to numbers?
