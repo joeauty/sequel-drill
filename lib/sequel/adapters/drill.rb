@@ -93,8 +93,13 @@ module Sequel
           query: sql
         }
 
+        # replace quotation marks with backticks for proper Drill support
+        sql.gsub!('"', '`')
+
+        # append workspace to all table names
+        sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{workspace}.\\1")
+
         if sql.start_with?("DROP TABLE ")
-          sql.gsub!('"', '`')
           sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_\.]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
         end
 
@@ -177,13 +182,8 @@ module Sequel
 
       def fetch_rows(sql)
         # hacks for Sequel functions without adapter methods intended to be extended/overridden
-        # replace quotation marks with backticks for proper Drill support
-        sql.gsub!('"', '`')
         # aggregate functions should include backticks
         sql.gsub!(/([[:alpha:]]+\(.*`?[A-Za-z0-9_*\s]+`?\)) AS ([A-Za-z0-9_]+)/, '\1 AS `\2`')
-
-        # append workspace to all table names
-        sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{@db.workspace}.\\1")
 
         execute(sql) do |row|
           # TODO: possible hack to cast numbers recorded as JSON strings to numbers?
