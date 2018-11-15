@@ -97,7 +97,11 @@ module Sequel
         sql.gsub!('"', '`')
 
         # append workspace to all table names
-        sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{workspace}.\\1")
+        revision_regex = /FROM (`[A-Za-z0-9_]+`)/
+        # tries replacing table name when it's a mongo id
+        sql.gsub!(revision_regex, "FROM dfs.#{workspace}.\\1")
+        # tries replacing table name when it's an uuid
+        sql.gsub!(/FROM (`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)/, "FROM dfs.#{workspace}.\\1")
 
         if sql.start_with?("DROP TABLE ")
           sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_\.]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
