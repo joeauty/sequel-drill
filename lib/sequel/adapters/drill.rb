@@ -122,7 +122,7 @@ module Sequel
             if res["errorMessage"].nil?
 
               # return empty array for empty data sets to follow more common conventions
-              if res["rows"] == "[{}]"
+              if res["rows"].to_json == "[{}]"
                 res["rows"] = []
               end
             end
