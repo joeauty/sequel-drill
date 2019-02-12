@@ -94,7 +94,7 @@ module Sequel
         }
 
         # replace quotation marks with backticks for proper Drill support
-        sql.gsub!('"', '`')
+        #sql.gsub!('"', '`')
 
         # append workspace to all table names
         sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{workspace}.\\1")
