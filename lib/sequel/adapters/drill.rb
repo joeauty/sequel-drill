@@ -97,7 +97,7 @@ module Sequel
         sql.gsub!('"', '`')
 
         # append workspace to all table names
-        sql.gsub!(/FROM ([A-Za-z0-9_]+)/, "FROM dfs.#{workspace}.\\1")
+        sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{workspace}.\\1")
   
         # NOTE: hardcoded concat handling (https://github.com/thinkdata-works/ingest/issues/879) for now
         # will handle this properly soon
