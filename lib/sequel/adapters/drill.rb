@@ -97,7 +97,7 @@ module Sequel
         #sql.gsub!('"', '`')
 
         # append workspace to all table names
-        sql.gsub!(/FROM (`[A-Za-z0-9_]+`)/, "FROM dfs.#{workspace}.\\1")
+        sql.gsub!(/FROM ("[A-Za-z0-9_]+")/, "FROM dfs.#{workspace}.\\1")
 
         if sql.start_with?("DROP TABLE ")
           sql.sub!(/^DROP TABLE (IF EXISTS )?`([A-Za-z0-9_\.]+)`$/, "DROP TABLE IF EXISTS dfs.#{workspace}.`\\2`")
