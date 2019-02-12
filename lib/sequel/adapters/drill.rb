@@ -105,7 +105,7 @@ module Sequel
           sql.gsub!(/concat\('`',/, "concat('\"',")
           sql.gsub!(/'`'\)/, "'\"')")
           sql.gsub!(/'``'\)/, "'\"\"')")
-          sql.gsub!(/'`'\)/, "\"")
+          sql.gsub!(/'`'/, "'\"'")
         end
 
         if sql.start_with?("DROP TABLE ")
